@@ -8,7 +8,7 @@ Python function and CLI based on argeparse.
 import sys, argparse, io, logging
 import pandas as pd
 
-def thermo_from_stream(in_stream, start_flg, end_flg, debug=False):
+def thermo_from_stream(in_stream, start_flg='Per MPI rank memory', end_flg='Loop time of', debug=False):
     """Parse stream of Lammps output to extract thermo data.
 
     Beginning and end of thermo loops are given by start and end flags.
@@ -33,11 +33,12 @@ def thermo_from_stream(in_stream, start_flg, end_flg, debug=False):
         if end_flg in line:
             parse_flg = False
             c_log.debug("----End parse at line %5i", i)
+            # Join all lines and parse as a CSV file, but with whitesapce as delimiter instead of comma.
+            # Assume floating point data. First row will automatically be header.
             thermo_data.append(pd.read_csv(io.StringIO('\n'.join(c_thermo_output)),
                                            delim_whitespace=True, dtype=float)
             )
             c_thermo_output = []
-
 
         if parse_flg:
             c_thermo_output.append(line)
@@ -47,6 +48,12 @@ def thermo_from_stream(in_stream, start_flg, end_flg, debug=False):
             c_log.debug("++Start parse at line %5i", i)
         i+=1
 
+    # Deal with incomplete runs
+    if len(c_thermo_output):
+        c_log.warning("Incomplete run of %i timesteps", len(c_thermo_output))
+        thermo_data.append(pd.read_csv(io.StringIO('\n'.join(c_thermo_output)),delim_whitespace=True, dtype=float))
+
+    # Return list of dataframes with runs output
     return thermo_data
 
 def extract_thermo(argv):
