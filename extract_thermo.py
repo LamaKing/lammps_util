@@ -8,7 +8,10 @@ Python function and CLI based on argeparse.
 import sys, argparse, io, logging
 import pandas as pd
 
-def thermo_from_stream(in_stream, start_flg='Per MPI rank memory', end_flg='Loop time of', debug=False):
+def thermo_from_stream(in_stream,
+                       start_flg='Per MPI rank memory', end_flg='Loop time of',
+                       header_char='',
+                       debug=False):
     """Parse stream of Lammps output to extract thermo data.
 
     Beginning and end of thermo loops are given by start and end flags.
@@ -41,11 +44,16 @@ def thermo_from_stream(in_stream, start_flg='Per MPI rank memory', end_flg='Loop
             c_thermo_output = []
 
         if parse_flg:
+            if header_flg:
+                line = header_char + line
+                header_flg = False
             c_thermo_output.append(line)
+
 
         if start_flg in line:
             parse_flg = True
             c_log.debug("++Start parse at line %5i", i)
+            header_flg = True
         i+=1
 
     # Deal with incomplete runs
@@ -68,13 +76,16 @@ def extract_thermo(argv):
     # Optional args
     parser.add_argument('--start_flg', '-s',
                         dest='start_flg', type=str, default='Per MPI rank memory',
-                        help='flag string to start parsing. This line is not included in output')
+                        help='flag string to start parsing. This line is not included in output. Default "Per MPI rank memory".')
     parser.add_argument('--end_flg', '-e',
                         dest='end_flg', type=str, default='Loop time of',
-                        help='flag string to end parsing. This line is not included in output.')
+                        help='flag string to end parsing. This line is not included in output. Defaul "Loop time of"')
     parser.add_argument('--to_files', '-f',
                         dest='basename', default=None, type=str,
                         help='save each run thermo to different file: <basename>-1, <basename>-2, etc.')
+    parser.add_argument('--head',
+                        dest='header_char', default='', type=str,
+                        help='trail every header line with this string, e.g. "#" for gnuplot.')
     parser.add_argument('--debug',
                         action='store_true', dest='debug',
                         help='show debug informations.')
@@ -100,6 +111,7 @@ def extract_thermo(argv):
         in_stream = sys.stdin
 
     thermo_data = thermo_from_stream(in_stream, args.start_flg, args.end_flg,
+                                     header_char=args.header_char,
                                      debug=args.debug)
     if args.filename: in_stream.close()
 
