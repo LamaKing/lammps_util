@@ -59,7 +59,11 @@ def thermo_from_stream(in_stream,
     # Deal with incomplete runs
     if len(c_thermo_output):
         c_log.warning("Incomplete run of %i timesteps", len(c_thermo_output))
-        thermo_data.append(pd.read_csv(io.StringIO('\n'.join(c_thermo_output)),delim_whitespace=True, dtype=float))
+        try:
+            thermo_data.append(pd.read_csv(io.StringIO('\n'.join(c_thermo_output)),delim_whitespace=True, dtype=float))
+        except ValueError or TypeError:
+            c_log.warning("Skip invalid last line %s" %  c_thermo_output[-1])
+            thermo_data.append(pd.read_csv(io.StringIO('\n'.join(c_thermo_output[:-1])),delim_whitespace=True, dtype=float))
 
     # Return list of dataframes with runs output
     return thermo_data
