@@ -6,7 +6,19 @@ from numpy import r_
 from ase import Atoms
 from ase.io import read
 import ase.build
-from useful_functions import logger_setup
+
+def logger_setup(module_name):
+    """Set up standar logger for a module and return it"""
+
+    # Set up LOGGER
+    c_log = logging.getLogger(module_name) # Use name of the calling moduel, not this function
+    # Adopted format: level - current function name - mess. Width is fixed as visual aid
+    std_format = '[%(levelname)5s - %(funcName)10s] %(message)s'
+    logging.basicConfig(format=std_format)
+    # Logging level is defined by calling module via root logger
+    return c_log
+
+
 
 class lmp_data_tmpl():
     """Class to contain the LAMMPS data. Must be specialized to different cells and styles"""
